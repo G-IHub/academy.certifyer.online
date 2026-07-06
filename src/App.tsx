@@ -1,7 +1,22 @@
 import { useState, useEffect, useMemo } from 'react';
-import { mockCourses, Course, Lesson, Exercise } from './data/courses';
+import { mockCourses } from './data/courses';
+import type { Lesson, Exercise } from './data/courses';
 import { getCookie, setCookie, deleteCookie } from './utils/cookieUtils';
+import { 
+  Award, 
+  Flame, 
+  LogIn, 
+  LogOut, 
+  CheckCircle, 
+  Lock, 
+  BookOpen, 
+  ChevronRight, 
+  Trophy,
+  BookOpenCheck,
+  Sparkles
+} from 'lucide-react';
 import './App.css';
+import logo from "./assets/logo.png";
 
 interface UserSession {
   email: string;
@@ -33,7 +48,7 @@ function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   // Learning Navigation State
-  const [selectedCourseId, setSelectedCourseId] = useState<string>('certifyer-101');
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('certifyer-bootcamp');
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
 
   // Quiz Engine State
@@ -81,7 +96,7 @@ function App() {
           email,
           points: 40,
           streak: 2,
-          completedLessons: ['lesson-welcome'],
+          completedLessons: ['mod1-l1'],
           unlockedBadges: [],
           isDemo: false
         });
@@ -150,7 +165,7 @@ function App() {
 
     if (isCorrect) {
       setQuizStatus('correct');
-      setFeedbackMessage(`Correct! You have earned +${exercise.points} points!`);
+      setFeedbackMessage(`Correct! You have earned +${exercise.points} XP!`);
       triggerConfetti();
 
       // Update session statistics
@@ -172,11 +187,6 @@ function App() {
       if (session.streak >= 3 && !newlyUnlockedBadges.includes('streak_3')) {
         newlyUnlockedBadges.push('streak_3');
       }
-      
-      // Check if API course is fully completed
-      if (selectedCourseId === 'certifyer-api-201' && !newlyUnlockedBadges.includes('api_master')) {
-        newlyUnlockedBadges.push('api_master');
-      }
 
       setSession({
         ...session,
@@ -192,7 +202,6 @@ function App() {
   };
 
   const handleNextLesson = () => {
-    // Navigate to next lesson
     const allCourseLessons: Lesson[] = [];
     activeCourse.modules.forEach(mod => {
       allCourseLessons.push(...mod.lessons);
@@ -211,7 +220,7 @@ function App() {
 
   // Generate success confetti
   const triggerConfetti = () => {
-    const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#a855f7'];
+    const colors = ['#ea580c', '#10b981', '#f59e0b', '#ef4444', '#a855f7'];
     const newConfetti = Array.from({ length: 45 }).map((_, i) => ({
       id: Date.now() + i,
       left: Math.random() * 100,
@@ -240,37 +249,33 @@ function App() {
 
   if (checkingAuth) {
     return (
-      <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', backgroundColor: 'var(--bg-main)' }}>
-        <h3 style={{ color: 'var(--text-heading)', fontWeight: 600 }}>Loading Academy Platform...</h3>
+      <div className="flex h-screen justify-center items-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+          <h3 className="text-lg font-semibold text-foreground">Loading Academy Platform...</h3>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="app-container">
-      {/* Confetti Explosion Layer */}
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      
+      {/* Confetti Particle Layer */}
       {confetti.length > 0 && (
-        <div className="confetti-overlay">
-          <style>{`
-            @keyframes confetti-fall {
-              0% { transform: translateY(-5vh) rotate(0deg); opacity: 1; }
-              100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
-            }
-          `}</style>
+        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
           {confetti.map(c => (
             <div
               key={c.id}
-              className="confetti-piece"
+              className="animate-confetti-fall absolute"
               style={{
                 left: `${c.left}%`,
                 backgroundColor: c.color,
                 animationDelay: `${c.delay}s`,
                 width: `${c.size}px`,
                 height: `${c.size}px`,
-                position: 'absolute',
                 top: '-10px',
                 borderRadius: '50%',
-                animation: 'confetti-fall 3s linear forwards'
               }}
             />
           ))}
@@ -278,56 +283,69 @@ function App() {
       )}
 
       {/* Top SSO Navigation */}
-      <nav className="top-nav">
-        <div className="brand-section">
-          <span className="brand-logo">Certifyer</span>
-          <span className="brand-badge">Academy</span>
+      <nav className="flex justify-between items-center px-6 md:px-8 h-[70px] bg-card border-b border-border sticky top-0 z-40 backdrop-blur-md bg-opacity-80 dark:bg-opacity-80 shadow-sm">
+        <div className="flex items-center gap-3">
+          <img src={logo} alt="Logo" className='w-10 h-10' />
+          <span className="font-extrabold text-2xl text-black bg-clip-text tracking-tight">
+            Certifyer Academy
+          </span>
+          {/* <span className="text-[10px] font-bold uppercase tracking-wider bg-primary-glow text-primary border border-primary/20 px-2 py-0.5 rounded-full">
+            Academy
+          </span> */}
         </div>
 
-        <div className="nav-right">
+        <div className="flex items-center gap-4">
           {session ? (
             <>
-              {/* Gamification stats */}
-              <div className="stats-container">
-                <div className="stat-pill points" title="Total Points Earned">
-                  <span className="icon-points">✨</span>
+              {/* Gamification Stats */}
+              <div className="hidden sm:flex gap-3">
+                <div className="flex items-center gap-1.5 bg-card border border-border px-3.5 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+                  <Sparkles className="w-4 h-4 text-primary" />
                   <span>{session.points} XP</span>
                 </div>
-                <div className="stat-pill streak" title="Daily Streak Count">
-                  <span className="icon-streak">🔥</span>
+                <div className="flex items-center gap-1.5 bg-card border border-border px-3.5 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+                  <Flame className="w-4 h-4 text-amber-500 animate-flame" />
                   <span>{session.streak} Days</span>
                 </div>
               </div>
 
-              {/* Active Logged-in User */}
-              <div className="user-widget">
-                <div className="user-avatar">
+              {/* User Account Info */}
+              <div className="flex items-center gap-2.5 bg-card border border-border px-3.5 py-1 rounded-full shadow-sm">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-orange-400 to-rose-450 flex items-center justify-center text-white font-bold text-xs">
                   {session.email.charAt(0).toUpperCase()}
                 </div>
-                <span className="user-email">{session.email}</span>
+                <span className="text-xs font-medium max-w-[130px] truncate text-foreground">
+                  {session.email}
+                </span>
               </div>
 
-              <button className="btn-auth logout" onClick={handleLogout}>
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 bg-transparent border border-border hover:bg-muted text-muted-foreground hover:text-foreground px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200"
+              >
+                <LogOut className="w-4 h-4" />
                 Sign Out
               </button>
             </>
           ) : (
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              {/* Redirect triggers to parent certifyer.online */}
+            <div className="flex gap-2">
               <button 
-                className="btn-auth login" 
                 onClick={() => {
                   const parentLogin = window.location.hostname.includes('localhost') 
                     ? 'http://localhost:5173' 
                     : 'https://certifyer.online';
                   window.location.href = parentLogin;
                 }}
+                className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer shadow-md shadow-primary/10 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
               >
-                Sign In with Certifyer
+                <LogIn className="w-4 h-4" />
+                Sign In
               </button>
               
-              {/* Local Dev bypass sandbox */}
-              <button className="btn-auth logout" onClick={handleLoginDemo}>
+              <button 
+                onClick={handleLoginDemo}
+                className="bg-transparent border border-border hover:bg-muted text-muted-foreground px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200"
+              >
                 Demo Guest SSO
               </button>
             </div>
@@ -335,22 +353,22 @@ function App() {
         </div>
       </nav>
 
-      {/* Core Split Layout */}
-      <div className="main-layout">
+      {/* Main Split Layout */}
+      <div className="flex flex-1 overflow-hidden" style={{ height: 'calc(100vh - 70px)' }}>
         
-        {/* Left Lesson Navigation Sidebar */}
-        <aside className="sidebar">
+        {/* Left Sidebar Navigation */}
+        <aside className="w-80 bg-muted border-r border-border flex flex-col h-full overflow-y-auto">
           
-          {/* Active Course Dropdown */}
-          <div className="course-selector-container">
+          {/* Active Course Select */}
+          <div className="p-4 border-b border-border bg-background">
             <select
-              className="course-select"
               value={selectedCourseId}
               onChange={(e) => {
                 setSelectedCourseId(e.target.value);
                 setActiveLessonId(null);
                 setQuizStatus('idle');
               }}
+              className="w-full p-2.5 rounded-lg border border-border bg-card text-foreground text-sm font-semibold shadow-sm focus:border-primary outline-none cursor-pointer"
             >
               {mockCourses.map(course => (
                 <option key={course.id} value={course.id}>
@@ -360,50 +378,70 @@ function App() {
             </select>
           </div>
 
-          {/* Module navigation list */}
-          <div style={{ flex: 1 }}>
+          {/* Module list */}
+          <div className="flex-1 py-4">
             {activeCourse.modules.map(mod => (
-              <div key={mod.id} className="module-group">
-                <div className="module-header">{mod.title}</div>
-                {mod.lessons.map(les => {
-                  const unlocked = isLessonUnlocked(les.id);
-                  const active = activeLessonId === les.id;
-                  const completed = session?.completedLessons.includes(les.id);
+              <div key={mod.id} className="mb-4">
+                <div className="text-xs font-bold text-muted-foreground uppercase px-6 py-2 tracking-wider">
+                  {mod.title}
+                </div>
+                <div>
+                  {mod.lessons.map(les => {
+                    const unlocked = isLessonUnlocked(les.id);
+                    const active = activeLessonId === les.id;
+                    const completed = session?.completedLessons.includes(les.id);
 
-                  return (
-                    <div
-                      key={les.id}
-                      className={`lesson-item ${active ? 'active' : ''} ${!unlocked ? 'locked' : ''}`}
-                      onClick={() => unlocked && setActiveLessonId(les.id)}
-                    >
-                      <span>{les.title}</span>
-                      <div className="lesson-meta">
-                        {completed && <span style={{ color: 'var(--success)' }}>✔</span>}
-                        {!unlocked && <span>🔒</span>}
+                    return (
+                      <div
+                        key={les.id}
+                        onClick={() => unlocked && setActiveLessonId(les.id)}
+                        className={`flex items-center justify-between px-6 py-3 border-l-4 transition-all duration-150 text-sm font-medium cursor-pointer ${
+                          active 
+                            ? 'bg-primary-glow text-primary border-l-primary font-semibold' 
+                            : 'border-l-transparent text-muted-foreground hover:bg-background/50 hover:text-foreground'
+                        } ${!unlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <span className="truncate pr-2">{les.title}</span>
+                        <div className="flex items-center">
+                          {completed && <CheckCircle className="w-4 h-4 text-emerald-550" />}
+                          {!unlocked && <Lock className="w-3.5 h-3.5 text-muted-foreground" />}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             ))}
           </div>
 
-          {/* Mini-leaderboard widget & Badge overview */}
+          {/* Gamification badging & mini-leaderboard */}
           {session && (
-            <div className="sidebar-footer">
-              <div className="badges-section" style={{ marginBottom: '1.25rem' }}>
-                <h3>Badges</h3>
-                <div className="badge-grid">
+            <div className="p-5 border-t border-border bg-background flex flex-col gap-5 mt-auto">
+              
+              {/* Badges list */}
+              <div>
+                <h3 className="text-xs font-bold text-muted-foreground uppercase mb-3 tracking-wider flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-primary" />
+                  Unlocked Badges
+                </h3>
+                <div className="flex gap-2.5 flex-wrap">
                   {BADGES.map(badge => {
                     const unlocked = session.unlockedBadges.includes(badge.id);
                     return (
                       <div
                         key={badge.id}
-                        className={`badge-item ${unlocked ? 'unlocked' : 'locked'}`}
+                        className={`group relative flex items-center justify-center w-10 h-10 rounded-xl border transition-all duration-200 ${
+                          unlocked 
+                            ? 'bg-accent-glow border-amber-300 dark:border-amber-800/50 text-amber-600 scale-105' 
+                            : 'bg-card border-border opacity-30 grayscale'
+                        }`}
                       >
-                        <span className="badge-icon">{badge.icon}</span>
-                        <div className="badge-tooltip">
-                          <strong>{badge.name}</strong>: {badge.description}
+                        <span className="text-xl">{badge.icon}</span>
+                        
+                        {/* Tooltip */}
+                        <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 absolute bottom-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-lg border border-slate-800 z-50 transition-all duration-200 whitespace-nowrap">
+                          <strong className="block text-amber-400">{badge.name}</strong>
+                          <span className="text-slate-300 text-[10px]">{badge.description}</span>
                         </div>
                       </div>
                     );
@@ -411,168 +449,229 @@ function App() {
                 </div>
               </div>
 
-              <div className="mini-leaderboard">
-                <h4>Leaderboard</h4>
-                {leaderboardData.slice(0, 3).map((item, index) => {
-                  const isCurrentUser = item.name === session.email;
-                  return (
-                    <div key={item.name} className={`leader-row ${isCurrentUser ? 'highlight' : ''}`}>
-                      <span className="leader-rank">#{index + 1}</span>
-                      <span className="leader-name">{item.name.split('@')[0]}</span>
-                      <span className="leader-pts">{item.points} XP</span>
-                    </div>
-                  );
-                })}
+              {/* Leaderboard stats */}
+              <div className="flex flex-col gap-2">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Trophy className="w-4 h-4 text-amber-500" />
+                  Weekly Leaderboard
+                </h3>
+                <div className="flex flex-col gap-1.5">
+                  {leaderboardData.slice(0, 3).map((item, index) => {
+                    const isCurrentUser = item.name === session.email;
+                    return (
+                      <div 
+                        key={item.name} 
+                        className={`flex justify-between items-center text-xs py-1.5 px-3 rounded-lg border ${
+                          isCurrentUser 
+                            ? 'bg-primary-glow border-primary/30 font-semibold' 
+                            : 'bg-card border-border'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-muted-foreground">#{index + 1}</span>
+                          <span className="truncate max-w-[120px] text-foreground">
+                            {item.name.split('@')[0]}
+                          </span>
+                        </div>
+                        <span className="font-bold text-primary">{item.points} XP</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
+
             </div>
           )}
         </aside>
 
-        {/* Right Active Lesson View */}
-        <main className="content-area">
+        {/* Right Content panel */}
+        <main className="flex-1 overflow-y-auto bg-background p-6 md:p-10 flex flex-col gap-8">
+          
           {activeLesson ? (
             <>
-              {/* Lesson body content */}
-              <div className="lesson-markdown">
+              {/* Lesson body markdown */}
+              <article className="prose dark:prose-invert max-w-none bg-card border border-border rounded-xl p-6 md:p-10 shadow-sm text-foreground">
                 <div 
                   dangerouslySetInnerHTML={{ 
                     __html: activeLesson.contentMarkdown
-                      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-                      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-                      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                      .replace(/`([^`]+)`/g, '<code>$1</code>')
-                      .replace(/\n\s*-\s*(.*)/g, '<li>$1</li>')
+                      .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-extrabold text-foreground tracking-tight mb-6 pb-3 border-b border-border">$1</h1>')
+                      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold text-foreground mt-8 mb-4">$2</h2>')
+                      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold text-foreground mt-6 mb-3">$1</h3>')
+                      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-foreground">$1</strong>')
+                      .replace(/`([^`]+)`/g, '<code class="bg-muted text-primary font-mono text-xs px-1.5 py-0.5 rounded font-semibold">$1</code>')
+                      .replace(/> (.*$)/gim, '<blockquote class="border-l-4 border-primary pl-4 py-1 italic my-4 text-muted-foreground bg-muted rounded-r-lg">$1</blockquote>')
+                      .replace(/\n\s*-\s*(.*)/g, '<li class="ml-5 list-disc mb-1">$1</li>')
                       .trim()
                   }} 
                 />
-              </div>
+              </article>
 
-              {/* Embed exercise checks */}
+              {/* Inline Interactive quiz box */}
               {activeLesson.exercise && (
-                <div className="exercise-box">
-                  <div className="exercise-header">
-                    <span className="exercise-title">📝 Practice Exercise</span>
-                    <span className="exercise-points-badge">+{activeLesson.exercise.points} XP</span>
+                <div className="bg-card border border-border rounded-xl p-6 md:p-8 shadow-sm flex flex-col gap-6">
+                  <div className="flex justify-between items-center border-b border-border pb-4">
+                    <h3 className="flex items-center gap-2 font-bold text-foreground text-base">
+                      <BookOpenCheck className="w-5 h-5 text-primary" />
+                      Practice Exercise
+                    </h3>
+                    <span className="text-xs font-bold text-primary bg-primary-glow border border-primary/20 px-2.5 py-1 rounded-lg">
+                      +{activeLesson.exercise.points} XP
+                    </span>
                   </div>
-                  
-                  <div className="exercise-question">
+
+                  <div className="text-sm font-semibold text-foreground">
                     {activeLesson.exercise.question}
                   </div>
 
                   {activeLesson.exercise.type === 'multiple-choice' ? (
-                    <div className="mc-options">
-                      {activeLesson.exercise.options?.map(opt => (
-                        <div
-                          key={opt}
-                          className={`mc-option ${selectedOption === opt ? 'selected' : ''}`}
-                          onClick={() => setSelectedOption(opt)}
-                        >
-                          <input
-                            type="radio"
-                            name="exercise-option"
-                            checked={selectedOption === opt}
-                            onChange={() => setSelectedOption(opt)}
-                          />
-                          <span>{opt}</span>
-                        </div>
-                      ))}
+                    <div className="flex flex-col gap-3">
+                      {activeLesson.exercise.options?.map(opt => {
+                        const isSelected = selectedOption === opt;
+                        return (
+                          <div
+                            key={opt}
+                            onClick={() => setSelectedOption(opt)}
+                            className={`flex items-center gap-3 border rounded-xl px-5 py-4 cursor-pointer transition-all duration-150 font-medium ${
+                              isSelected 
+                                ? 'border-primary bg-primary-glow text-primary font-semibold shadow-sm' 
+                                : 'border-border hover:bg-muted text-foreground'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="exercise-option"
+                              checked={isSelected}
+                              onChange={() => setSelectedOption(opt)}
+                              className="accent-primary w-4.5 h-4.5"
+                            />
+                            <span className="text-sm">{opt}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div>
                       <input
                         type="text"
-                        className="fib-input"
-                        placeholder="Type answer here..."
+                        placeholder="Type correct answer..."
                         value={blankAnswer}
                         onChange={(e) => setBlankAnswer(e.target.value)}
+                        className="w-full max-w-md p-3 rounded-lg border border-border bg-muted text-foreground font-semibold text-sm outline-none focus:border-primary focus:bg-card focus:ring-2 focus:ring-primary/10"
                       />
                     </div>
                   )}
 
-                  <div className="exercise-actions">
+                  <div className="flex gap-3 items-center pt-2">
                     <button
-                      className="btn-submit"
                       disabled={
                         activeLesson.exercise.type === 'multiple-choice'
                           ? !selectedOption
                           : !blankAnswer
                       }
                       onClick={() => handleSubmitAnswer(activeLesson.exercise!)}
+                      className="bg-primary hover:bg-primary/90 active:scale-[0.98] text-white font-semibold text-sm px-6 py-2.5 rounded-lg cursor-pointer transition-all duration-200 shadow-md shadow-primary/15 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                     >
                       Submit Answer
                     </button>
 
                     {quizStatus === 'correct' && (
-                      <button className="btn-next" onClick={handleNextLesson}>
-                        Next Lesson ➔
+                      <button 
+                        onClick={handleNextLesson}
+                        className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-semibold text-sm px-6 py-2.5 rounded-lg cursor-pointer transition-all duration-200 shadow-md shadow-emerald-600/15"
+                      >
+                        Next Lesson
+                        <ChevronRight className="w-4 h-4" />
                       </button>
                     )}
                   </div>
 
+                  {/* Feedback Message */}
                   {quizStatus !== 'idle' && (
-                    <div className={`feedback-banner ${quizStatus === 'correct' ? 'correct' : 'incorrect'}`}>
-                      {quizStatus === 'correct' ? '✅' : '❌'} {feedbackMessage}
+                    <div className={`flex items-center gap-2 p-4 rounded-lg font-semibold text-sm border ${
+                      quizStatus === 'correct' 
+                        ? 'bg-success-glow text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+                        : 'bg-error-glow text-destructive border-destructive/20'
+                    }`}>
+                      <span>{quizStatus === 'correct' ? '✅' : '❌'}</span>
+                      <p>{feedbackMessage}</p>
                     </div>
                   )}
                 </div>
               )}
             </>
           ) : (
-            <div className="welcome-screen">
-              <span className="welcome-logo">🎓</span>
-              <h1>Welcome to Certifyer Academy</h1>
-              <p>
+            <div className="max-w-3xl mx-auto my-12 text-center flex flex-col items-center gap-6">
+              <div className="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center text-4xl shadow-inner animate-bounce">
+                <img src={logo} alt="Logo" className='w-14 h-14' />
+              </div>
+              <h1 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight leading-tight">
+                Certifyer Academy Bootcamp
+              </h1>
+              <p className="text-base text-muted-foreground max-w-xl">
                 {session 
-                  ? 'Select a course from the dropdown and select a lesson to start your journey.' 
-                  : 'Please sign in with your Certifyer account to sync your progress, earn experience points (XP), and unlock credentials.'}
+                  ? 'Select a course from the sidebar and get started with your first interactive lesson!' 
+                  : 'Start your journey to package your skills, build templates, and sell digital assets. Sign in with your Certifyer account to track stats.'}
               </p>
 
               {!session && (
-                <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
+                <div className="flex gap-3 mt-2">
                   <button 
-                    className="btn-auth login"
                     onClick={() => {
                       const parentLogin = window.location.hostname.includes('localhost') 
                         ? 'http://localhost:5173' 
                         : 'https://certifyer.online';
                       window.location.href = parentLogin;
                     }}
+                    className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-5 py-3 rounded-lg text-sm font-semibold shadow-md shadow-primary/10 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
                   >
-                    Authenticate Now
+                    <LogIn className="w-4 h-4" />
+                    Authenticate Session
                   </button>
-                  <button className="btn-auth logout" onClick={handleLoginDemo}>
+                  <button 
+                    onClick={handleLoginDemo}
+                    className="bg-transparent border border-border hover:bg-muted text-muted-foreground px-5 py-3 rounded-lg text-sm font-semibold transition-all duration-200"
+                  >
                     Browse as Guest (Demo SSO)
                   </button>
                 </div>
               )}
 
-              <div style={{ width: '100%', marginTop: '3rem' }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-heading)' }}>
-                  Available Academy Programs
+              {/* Course Catalog display */}
+              <div className="w-full mt-10 border-t border-border pt-10">
+                <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-6 flex items-center justify-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  Active Curriculums
                 </h2>
-                <div className="course-card-grid">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                   {mockCourses.map(c => (
                     <div
                       key={c.id}
-                      className="course-card"
                       onClick={() => {
                         setSelectedCourseId(c.id);
                         if (session) {
-                          // Auto open first lesson if unlocked
                           setActiveLessonId(c.modules[0].lessons[0].id);
                         }
                       }}
+                      className="group bg-card border border-border hover:border-primary rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1 flex flex-col justify-between shadow-sm"
                     >
                       <div>
-                        <span className={`course-difficulty-badge ${c.difficulty}`}>
+                        <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                          c.difficulty === 'Beginner' 
+                            ? 'bg-orange-100 text-orange-600 border border-orange-400' 
+                            : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border border-amber-200/50'
+                        }`}>
                           {c.difficulty}
                         </span>
-                        <h3 style={{ marginTop: '0.5rem' }}>{c.title}</h3>
-                        <p>{c.description}</p>
+                        <h3 className="font-bold text-base text-foreground mt-3 group-hover:text-primary transition-all">
+                          {c.title}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                          {c.description}
+                        </p>
                       </div>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)' }}>
-                        Start Learning ➔
+                      <span className="text-xs font-bold text-primary mt-4 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-all">
+                        Begin Bootcamp
+                        <ChevronRight className="w-3.5 h-3.5" />
                       </span>
                     </div>
                   ))}
