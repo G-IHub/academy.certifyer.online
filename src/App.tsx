@@ -437,13 +437,13 @@ function App() {
         {isSidebarOpen && (
           <div 
             onClick={() => setIsSidebarOpen(false)} 
-            className="fixed inset-0 bg-black/45 z-30 transition-opacity duration-300 lg:hidden"
+            className="fixed top-[70px] inset-x-0 bottom-0 bg-black/45 z-25 transition-opacity duration-300 lg:hidden"
           />
         )}
         
         {/* Left Sidebar Navigation */}
         <aside className={`
-          fixed lg:static inset-y-0 left-0 z-45
+          fixed lg:static top-[70px] lg:top-0 bottom-0 left-0 z-35
           flex flex-col h-full bg-muted border-r border-border overflow-y-auto
           transition-all duration-300 ease-in-out
           ${isSidebarOpen 
