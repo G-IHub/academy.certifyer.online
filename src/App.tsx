@@ -408,9 +408,10 @@ function App() {
             <div className="flex gap-1.5 md:gap-2">
               <button 
                 onClick={() => {
+                  const redirectParam = encodeURIComponent(window.location.origin);
                   const parentLogin = window.location.hostname.includes('localhost') 
-                    ? 'http://localhost:5173' 
-                    : 'https://certifyer.online';
+                    ? `http://localhost:5173/login?redirect=${redirectParam}` 
+                    : `https://certifyer.online/login?redirect=${redirectParam}`;
                   window.location.href = parentLogin;
                 }}
                 className="flex items-center gap-1 bg-primary hover:bg-primary/90 text-white px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-semibold cursor-pointer shadow-md shadow-primary/10 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
@@ -723,13 +724,14 @@ function App() {
                   : 'Start your journey to package your skills, build templates, and sell digital assets. Sign in with your Certifyer account to track stats.'}
               </p>
 
-              {/* {!session && (
+              {!session && (
                 <div className="flex gap-3 mt-2">
                   <button 
                     onClick={() => {
+                      const redirectParam = encodeURIComponent(window.location.origin);
                       const parentLogin = window.location.hostname.includes('localhost') 
-                        ? 'http://localhost:5173' 
-                        : 'https://certifyer.online';
+                        ? `http://localhost:5173/login?redirect=${redirectParam}` 
+                        : `https://certifyer.online/login?redirect=${redirectParam}`;
                       window.location.href = parentLogin;
                     }}
                     className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-5 py-3 rounded-lg text-sm font-semibold shadow-md shadow-primary/10 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
@@ -744,7 +746,7 @@ function App() {
                     Browse as Guest (Demo SSO)
                   </button>
                 </div>
-              )} */}
+              )}
 
               {/* Course Catalog display */}
               <div className="w-full mt-10 border-t border-border pt-10">
