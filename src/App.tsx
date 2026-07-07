@@ -13,7 +13,9 @@ import {
   ChevronRight, 
   Trophy,
   BookOpenCheck,
-  Sparkles
+  Sparkles,
+  Menu,
+  X
 } from 'lucide-react';
 import './App.css';
 import logo from "./assets/logo.png";
@@ -50,6 +52,8 @@ function App() {
   // Learning Navigation State
   const [selectedCourseId, setSelectedCourseId] = useState<string>('certifyer-bootcamp');
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
   // Quiz Engine State
   const [selectedOption, setSelectedOption] = useState<string>('');
@@ -107,6 +111,20 @@ function App() {
     setCheckingAuth(false);
   }, []);
 
+  // Handle responsive sidebar collapsing
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Sync token to cookie helper (Simulating a main-app sign-in locally)
   const handleLoginDemo = () => {
     // Generate a secure mock session
@@ -123,6 +141,13 @@ function App() {
     });
   };
 
+  useEffect(() => {
+    (window as any).triggerGuestSSO = handleLoginDemo;
+    return () => {
+      delete (window as any).triggerGuestSSO;
+    };
+  }, []);
+
   const handleLogout = () => {
     deleteCookie('accessToken');
     setSession(null);
@@ -131,21 +156,8 @@ function App() {
   };
 
   // Determine if a lesson is unlocked
-  const isLessonUnlocked = (lessonId: string): boolean => {
-    if (!session) return false;
-    
-    // Find flattened list of lessons in active course
-    const allCourseLessons: Lesson[] = [];
-    activeCourse.modules.forEach(mod => {
-      allCourseLessons.push(...mod.lessons);
-    });
-
-    const index = allCourseLessons.findIndex(l => l.id === lessonId);
-    if (index === 0) return true; // First lesson is always unlocked
-
-    // Unlocked if previous lesson is completed
-    const prevLesson = allCourseLessons[index - 1];
-    return session.completedLessons.includes(prevLesson.id);
+  const isLessonUnlocked = (_lessonId: string): boolean => {
+    return true; // Always unlocked for free browsing
   };
 
   // Check exercise answer
@@ -285,50 +297,115 @@ function App() {
       {/* Top SSO Navigation */}
       <nav className="flex justify-between items-center px-6 md:px-8 h-[70px] bg-card border-b border-border sticky top-0 z-40 backdrop-blur-md bg-opacity-80 dark:bg-opacity-80 shadow-sm">
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 -ml-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+            title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+          >
+            <Menu className="w-5 h-5" />
+          </button>
           <img src={logo} alt="Logo" className='w-10 h-10' />
-          <span className="font-extrabold text-2xl text-black bg-clip-text tracking-tight">
+          <span className="font-extrabold text-sm md:text-2xl text-black bg-clip-text tracking-tight">
             Certifyer Academy
           </span>
-          {/* <span className="text-[10px] font-bold uppercase tracking-wider bg-primary-glow text-primary border border-primary/20 px-2 py-0.5 rounded-full">
-            Academy
-          </span> */}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           {session ? (
             <>
-              {/* Gamification Stats */}
-              <div className="hidden sm:flex gap-3">
-                <div className="flex items-center gap-1.5 bg-card border border-border px-3.5 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <span>{session.points} XP</span>
+              {/* DESKTOP LAYOUT (visible md and up) */}
+              <div className="hidden md:flex items-center gap-3">
+                {/* Gamification Stats */}
+                <div className="flex gap-3">
+                  <div className="flex items-center gap-1.5 bg-card border border-border px-3.5 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    <span>{session.points} XP</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-card border border-border px-3.5 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+                    <Flame className="w-4 h-4 text-amber-500 animate-flame" />
+                    <span>{session.streak} Days</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 bg-card border border-border px-3.5 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
-                  <Flame className="w-4 h-4 text-amber-500 animate-flame" />
-                  <span>{session.streak} Days</span>
+
+                {/* User Account Info */}
+                <div className="flex items-center gap-2.5 bg-card border border-border px-3.5 py-1 rounded-full shadow-sm">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-orange-400 to-rose-450 flex items-center justify-center text-white font-bold text-xs">
+                    {session.email.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-xs font-medium max-w-[130px] truncate text-foreground">
+                    {session.email}
+                  </span>
                 </div>
+
+                <button 
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 bg-transparent border border-border hover:bg-muted text-muted-foreground hover:text-foreground px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
               </div>
 
-              {/* User Account Info */}
-              <div className="flex items-center gap-2.5 bg-card border border-border px-3.5 py-1 rounded-full shadow-sm">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-orange-400 to-rose-450 flex items-center justify-center text-white font-bold text-xs">
+              {/* MOBILE DROPDOWN LAYOUT (visible below md) */}
+              <div className="flex md:hidden items-center relative">
+                <button
+                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                  className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-400 to-rose-450 flex items-center justify-center text-white font-bold text-sm shadow-md cursor-pointer transition-transform duration-200 active:scale-95"
+                  title="Profile Menu"
+                >
                   {session.email.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-xs font-medium max-w-[130px] truncate text-foreground">
-                  {session.email}
-                </span>
-              </div>
+                </button>
 
-              <button 
-                onClick={handleLogout}
-                className="flex items-center gap-1.5 bg-transparent border border-border hover:bg-muted text-muted-foreground hover:text-foreground px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </button>
+                {isProfileDropdownOpen && (
+                  <>
+                    {/* Backdrop to close the dropdown when clicking outside */}
+                    <div 
+                      onClick={() => setIsProfileDropdownOpen(false)} 
+                      className="fixed inset-0 z-40 bg-transparent"
+                    />
+                    
+                    <div className="absolute right-0 top-12 z-50 bg-card border border-border rounded-xl p-4 shadow-lg flex flex-col gap-3 min-w-[220px] text-left">
+                      <div className="pb-2 border-b border-border">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Logged in as</span>
+                        <span className="text-xs font-semibold text-foreground block truncate">{session.email}</span>
+                      </div>
+                      
+                      {/* Stats */}
+                      <div className="flex flex-col gap-2 py-1">
+                        <div className="flex items-center justify-between text-xs font-semibold">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <Sparkles className="w-3.5 h-3.5 text-primary" />
+                            XP Points
+                          </span>
+                          <span className="text-foreground font-bold">{session.points} XP</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs font-semibold">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <Flame className="w-3.5 h-3.5 text-amber-500 animate-flame" />
+                            Streak
+                          </span>
+                          <span className="text-foreground font-bold">{session.streak} Days</span>
+                        </div>
+                      </div>
+
+                      {/* Sign Out */}
+                      <button 
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          handleLogout();
+                        }}
+                        className="w-full flex items-center justify-center gap-1.5 bg-muted hover:bg-border border border-border text-foreground py-2 rounded-lg text-xs font-bold cursor-pointer transition-all duration-200"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </>
           ) : (
-            <div className="flex gap-2">
+            <div className="flex gap-1.5 md:gap-2">
               <button 
                 onClick={() => {
                   const parentLogin = window.location.hostname.includes('localhost') 
@@ -336,31 +413,47 @@ function App() {
                     : 'https://certifyer.online';
                   window.location.href = parentLogin;
                 }}
-                className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer shadow-md shadow-primary/10 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+                className="flex items-center gap-1 bg-primary hover:bg-primary/90 text-white px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-semibold cursor-pointer shadow-md shadow-primary/10 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
               >
-                <LogIn className="w-4 h-4" />
+                <LogIn className="w-3.5 h-3.5" />
                 Sign In
               </button>
               
-              <button 
+              {/* <button 
                 onClick={handleLoginDemo}
-                className="bg-transparent border border-border hover:bg-muted text-muted-foreground px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-200"
+                className="bg-transparent border border-border hover:bg-muted text-muted-foreground px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-semibold cursor-pointer transition-all duration-200"
               >
-                Demo Guest SSO
-              </button>
+                Demo Guest
+              </button> */}
             </div>
           )}
         </div>
       </nav>
 
       {/* Main Split Layout */}
-      <div className="flex flex-1 overflow-hidden" style={{ height: 'calc(100vh - 70px)' }}>
+      <div className="flex flex-1 overflow-hidden relative" style={{ height: 'calc(100vh - 70px)' }}>
+        
+        {/* Sidebar Backdrop Overlay on Mobile */}
+        {isSidebarOpen && (
+          <div 
+            onClick={() => setIsSidebarOpen(false)} 
+            className="fixed inset-0 bg-black/45 z-30 transition-opacity duration-300 lg:hidden"
+          />
+        )}
         
         {/* Left Sidebar Navigation */}
-        <aside className="w-80 bg-muted border-r border-border flex flex-col h-full overflow-y-auto">
+        <aside className={`
+          fixed lg:static inset-y-0 left-0 z-45
+          flex flex-col h-full bg-muted border-r border-border overflow-y-auto
+          transition-all duration-300 ease-in-out
+          ${isSidebarOpen 
+            ? 'w-80 translate-x-0 opacity-100 shadow-xl lg:shadow-none' 
+            : 'w-0 -translate-x-full lg:translate-x-0 opacity-0 overflow-hidden pointer-events-none'
+          }
+        `}>
           
           {/* Active Course Select */}
-          <div className="p-4 border-b border-border bg-background">
+          <div className="p-4 border-b border-border bg-background flex items-center justify-between gap-2">
             <select
               value={selectedCourseId}
               onChange={(e) => {
@@ -368,7 +461,7 @@ function App() {
                 setActiveLessonId(null);
                 setQuizStatus('idle');
               }}
-              className="w-full p-2.5 rounded-lg border border-border bg-card text-foreground text-sm font-semibold shadow-sm focus:border-primary outline-none cursor-pointer"
+              className="flex-1 p-2.5 rounded-lg border border-border bg-card text-foreground text-sm font-semibold shadow-sm focus:border-primary outline-none cursor-pointer"
             >
               {mockCourses.map(course => (
                 <option key={course.id} value={course.id}>
@@ -376,6 +469,13 @@ function App() {
                 </option>
               ))}
             </select>
+            <button 
+              onClick={() => setIsSidebarOpen(false)}
+              className="lg:hidden p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+              title="Close Sidebar"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Module list */}
@@ -495,7 +595,7 @@ function App() {
                   dangerouslySetInnerHTML={{ 
                     __html: activeLesson.contentMarkdown
                       .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-extrabold text-foreground tracking-tight mb-6 pb-3 border-b border-border">$1</h1>')
-                      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold text-foreground mt-8 mb-4">$2</h2>')
+                      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold text-foreground mt-8 mb-4">$1</h2>')
                       .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold text-foreground mt-6 mb-3">$1</h3>')
                       .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-foreground">$1</strong>')
                       .replace(/`([^`]+)`/g, '<code class="bg-muted text-primary font-mono text-xs px-1.5 py-0.5 rounded font-semibold">$1</code>')
@@ -504,6 +604,18 @@ function App() {
                       .trim()
                   }} 
                 />
+                
+                {!activeLesson.exercise && (
+                  <div className="flex justify-end mt-8 pt-6 border-t border-border">
+                    <button
+                      onClick={handleNextLesson}
+                      className="flex items-center gap-1 bg-primary hover:bg-primary/90 text-white font-semibold text-sm px-6 py-2.5 rounded-lg cursor-pointer transition-all duration-200 shadow-md shadow-primary/15"
+                    >
+                      Next Lesson
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </article>
 
               {/* Inline Interactive quiz box */}
@@ -574,15 +686,13 @@ function App() {
                       Submit Answer
                     </button>
 
-                    {quizStatus === 'correct' && (
-                      <button 
-                        onClick={handleNextLesson}
-                        className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-semibold text-sm px-6 py-2.5 rounded-lg cursor-pointer transition-all duration-200 shadow-md shadow-emerald-600/15"
-                      >
-                        Next Lesson
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    )}
+                    <button 
+                      onClick={handleNextLesson}
+                      className="flex items-center gap-1 bg-muted hover:bg-border text-foreground font-semibold text-sm px-6 py-2.5 rounded-lg cursor-pointer transition-all duration-200 border border-border"
+                    >
+                      Next Lesson
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
 
                   {/* Feedback Message */}
@@ -613,7 +723,7 @@ function App() {
                   : 'Start your journey to package your skills, build templates, and sell digital assets. Sign in with your Certifyer account to track stats.'}
               </p>
 
-              {!session && (
+              {/* {!session && (
                 <div className="flex gap-3 mt-2">
                   <button 
                     onClick={() => {
@@ -634,7 +744,7 @@ function App() {
                     Browse as Guest (Demo SSO)
                   </button>
                 </div>
-              )}
+              )} */}
 
               {/* Course Catalog display */}
               <div className="w-full mt-10 border-t border-border pt-10">
