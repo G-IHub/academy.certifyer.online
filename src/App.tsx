@@ -66,6 +66,9 @@ function App() {
   // Confetti Animation State
   const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
 
+  // Collapsible Sidebar Accordion State
+  const [expandedModuleIds, setExpandedModuleIds] = useState<string[]>([]);
+
   // Initialize Course details
   const activeCourse = useMemo(() => {
     return mockCourses.find(c => c.id === selectedCourseId) || mockCourses[0];
@@ -79,6 +82,30 @@ function App() {
     }
     return null;
   }, [activeLessonId, activeCourse]);
+
+  // Retract all modules by default, expanding only the active lesson's module
+  useEffect(() => {
+    if (activeCourse && activeLessonId) {
+      const activeModule = activeCourse.modules.find(mod => 
+        mod.lessons.some(les => les.id === activeLessonId)
+      );
+      if (activeModule) {
+        setExpandedModuleIds([activeModule.id]);
+      } else {
+        setExpandedModuleIds([]);
+      }
+    } else {
+      setExpandedModuleIds([]);
+    }
+  }, [activeCourse, activeLessonId]);
+
+  const toggleModuleExpanded = (moduleId: string) => {
+    setExpandedModuleIds(prev => 
+      prev.includes(moduleId)
+        ? prev.filter(id => id !== moduleId)
+        : [...prev, moduleId]
+    );
+  };
 
   // Check shared cookie on component mount
   useEffect(() => {
@@ -469,7 +496,6 @@ function App() {
       {/* Main Split Layout */}
       <div className="flex flex-1 overflow-hidden relative" style={{ height: 'calc(100vh - 70px)' }}>
         
-        {/* Sidebar Backdrop Overlay on Mobile */}
         {isSidebarOpen && (
           <div 
             onClick={() => setIsSidebarOpen(false)} 
@@ -480,7 +506,7 @@ function App() {
         {/* Left Sidebar Navigation */}
         <aside className={`
           fixed lg:static top-[70px] lg:top-0 bottom-0 left-0 z-35
-          flex flex-col h-full bg-muted border-r border-border overflow-y-auto
+          flex flex-col h-full bg-muted border-r border-border overflow-y-auto text-foreground
           transition-all duration-300 ease-in-out
           ${isSidebarOpen 
             ? 'w-80 translate-x-0 opacity-100 shadow-xl lg:shadow-none' 
@@ -515,39 +541,53 @@ function App() {
           </div>
 
           {/* Module list */}
-          <div className="flex-1 py-4">
-            {activeCourse.modules.map(mod => (
-              <div key={mod.id} className="mb-4">
-                <div className="text-xs font-bold text-muted-foreground uppercase px-6 py-2 tracking-wider">
-                  {mod.title}
-                </div>
-                <div>
-                  {mod.lessons.map(les => {
-                    const unlocked = isLessonUnlocked(les.id);
-                    const active = activeLessonId === les.id;
-                    const completed = session?.completedLessons.includes(les.id);
+          <div className="flex-1 py-4 overflow-y-auto">
+            {activeCourse.modules.map(mod => {
+              const isExpanded = expandedModuleIds.includes(mod.id);
+              return (
+                <div key={mod.id} className="mb-3 border-b border-border/20 pb-1.5">
+                  <div 
+                    onClick={() => toggleModuleExpanded(mod.id)}
+                    className="flex items-center justify-between text-xs md:text-sm font-extrabold font-sans text-muted-foreground uppercase px-6 py-3 tracking-wider cursor-pointer hover:bg-muted/70 hover:text-foreground transition-all duration-150 select-none"
+                  >
+                    <span className="truncate pr-2">{mod.title}</span>
+                    <ChevronRight 
+                      className={`w-3.5 h-3.5 text-muted-foreground/60 transition-transform duration-200 ${
+                        isExpanded ? 'rotate-90' : ''
+                      }`} 
+                    />
+                  </div>
+                  
+                  {isExpanded && (
+                    <div className="flex flex-col">
+                      {mod.lessons.map(les => {
+                        const unlocked = isLessonUnlocked(les.id);
+                        const active = activeLessonId === les.id;
+                        const completed = session?.completedLessons.includes(les.id);
 
-                    return (
-                      <div
-                        key={les.id}
-                        onClick={() => unlocked && setActiveLessonId(les.id)}
-                        className={`flex items-center justify-between px-6 py-3 border-l-4 transition-all duration-150 text-sm font-medium cursor-pointer ${
-                          active 
-                            ? 'bg-primary-glow text-primary border-l-primary font-semibold' 
-                            : 'border-l-transparent text-muted-foreground hover:bg-background/50 hover:text-foreground'
-                        } ${!unlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        <span className="truncate pr-2">{les.title}</span>
-                        <div className="flex items-center">
-                          {completed && <CheckCircle className="w-4 h-4 text-emerald-550" />}
-                          {!unlocked && <Lock className="w-3.5 h-3.5 text-muted-foreground" />}
-                        </div>
-                      </div>
-                    );
-                  })}
+                        return (
+                          <div
+                            key={les.id}
+                            onClick={() => unlocked && setActiveLessonId(les.id)}
+                            className={`flex items-center justify-between px-6 py-2.5 border-l-4 transition-all duration-150 text-sm font-medium cursor-pointer ${
+                              active 
+                                ? 'bg-primary-glow text-primary border-l-primary font-semibold' 
+                                : 'border-l-transparent text-muted-foreground hover:bg-background/50 hover:text-foreground'
+                            } ${!unlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            <span className="truncate pr-2">{les.title}</span>
+                            <div className="flex items-center">
+                              {completed && <CheckCircle className="w-4 h-4 text-emerald-555" />}
+                              {!unlocked && <Lock className="w-3.5 h-3.5 text-muted-foreground" />}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Gamification badging & mini-leaderboard */}
@@ -588,7 +628,7 @@ function App() {
               {/* Leaderboard stats */}
               <div className="flex flex-col gap-2">
                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Trophy className="w-4 h-4 text-amber-500" />
+                  <Trophy className="w-4 h-4 text-amber-550" />
                   Weekly Leaderboard
                 </h3>
                 <div className="flex flex-col gap-1.5">
