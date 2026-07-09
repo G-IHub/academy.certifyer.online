@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { mockCourses } from './data/courses';
 import type { Lesson, Exercise } from './data/courses';
 import { getCookie, setCookie, deleteCookie } from './utils/cookieUtils';
+import { parseMarkdown } from './utils/markdown';
 import { 
   Award, 
   Flame, 
@@ -10,6 +11,7 @@ import {
   CheckCircle, 
   Lock, 
   BookOpen, 
+  ChevronLeft,
   ChevronRight, 
   Trophy,
   BookOpenCheck,
@@ -210,6 +212,39 @@ function App() {
     } else {
       setQuizStatus('incorrect');
       setFeedbackMessage('Incorrect answer. Please review the material and try again.');
+    }
+  };
+
+  // Find current lesson's position relative to all lessons
+  const { isFirstLesson, isLastLesson } = useMemo(() => {
+    if (!activeCourse || !activeLessonId) {
+      return { isFirstLesson: true, isLastLesson: true };
+    }
+    const allCourseLessons: Lesson[] = [];
+    activeCourse.modules.forEach(mod => {
+      allCourseLessons.push(...mod.lessons);
+    });
+    const currIndex = allCourseLessons.findIndex(l => l.id === activeLessonId);
+    return {
+      isFirstLesson: currIndex <= 0,
+      isLastLesson: currIndex === -1 || currIndex >= allCourseLessons.length - 1
+    };
+  }, [activeCourse, activeLessonId]);
+
+  const handlePreviousLesson = () => {
+    const allCourseLessons: Lesson[] = [];
+    activeCourse.modules.forEach(mod => {
+      allCourseLessons.push(...mod.lessons);
+    });
+
+    const currIndex = allCourseLessons.findIndex(l => l.id === activeLessonId);
+    if (currIndex > 0) {
+      const prevId = allCourseLessons[currIndex - 1].id;
+      setActiveLessonId(prevId);
+      setSelectedOption('');
+      setBlankAnswer('');
+      setQuizStatus('idle');
+      setFeedbackMessage('');
     }
   };
 
@@ -594,23 +629,24 @@ function App() {
               <article className="prose dark:prose-invert max-w-none bg-card border border-border rounded-xl p-6 md:p-10 shadow-sm text-foreground">
                 <div 
                   dangerouslySetInnerHTML={{ 
-                    __html: activeLesson.contentMarkdown
-                      .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-extrabold text-foreground tracking-tight mb-6 pb-3 border-b border-border">$1</h1>')
-                      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold text-foreground mt-8 mb-4">$1</h2>')
-                      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold text-foreground mt-6 mb-3">$1</h3>')
-                      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-foreground">$1</strong>')
-                      .replace(/`([^`]+)`/g, '<code class="bg-muted text-primary font-mono text-xs px-1.5 py-0.5 rounded font-semibold">$1</code>')
-                      .replace(/> (.*$)/gim, '<blockquote class="border-l-4 border-primary pl-4 py-1 italic my-4 text-muted-foreground bg-muted rounded-r-lg">$1</blockquote>')
-                      .replace(/\n\s*-\s*(.*)/g, '<li class="ml-5 list-disc mb-1">$1</li>')
-                      .trim()
+                    __html: parseMarkdown(activeLesson.contentMarkdown)
                   }} 
                 />
                 
                 {!activeLesson.exercise && (
-                  <div className="flex justify-end mt-8 pt-6 border-t border-border">
+                  <div className="flex justify-between mt-8 pt-6 border-t border-border gap-3">
+                    <button
+                      onClick={handlePreviousLesson}
+                      disabled={isFirstLesson}
+                      className="flex items-center gap-1.5 bg-muted hover:bg-border text-foreground disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm px-5 py-2.5 rounded-lg cursor-pointer transition-all duration-200 border border-border"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous Lesson
+                    </button>
                     <button
                       onClick={handleNextLesson}
-                      className="flex items-center gap-1 bg-primary hover:bg-primary/90 text-white font-semibold text-sm px-6 py-2.5 rounded-lg cursor-pointer transition-all duration-200 shadow-md shadow-primary/15"
+                      disabled={isLastLesson}
+                      className="flex items-center gap-1 bg-primary hover:bg-primary/90 text-white disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm px-5 py-2.5 rounded-lg cursor-pointer transition-all duration-200 shadow-md shadow-primary/15"
                     >
                       Next Lesson
                       <ChevronRight className="w-4 h-4" />
@@ -674,26 +710,38 @@ function App() {
                     </div>
                   )}
 
-                  <div className="flex gap-3 items-center pt-2">
-                    <button
-                      disabled={
-                        activeLesson.exercise.type === 'multiple-choice'
-                          ? !selectedOption
-                          : !blankAnswer
-                      }
-                      onClick={() => handleSubmitAnswer(activeLesson.exercise!)}
-                      className="bg-primary hover:bg-primary/90 active:scale-[0.98] text-white font-semibold text-sm px-6 py-2.5 rounded-lg cursor-pointer transition-all duration-200 shadow-md shadow-primary/15 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                    >
-                      Submit Answer
-                    </button>
-
-                    <button 
-                      onClick={handleNextLesson}
-                      className="flex items-center gap-1 bg-muted hover:bg-border text-foreground font-semibold text-sm px-6 py-2.5 rounded-lg cursor-pointer transition-all duration-200 border border-border"
-                    >
-                      Next Lesson
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
+                  <div className="flex flex-wrap gap-3 items-center justify-between pt-2">
+                    <div>
+                      <button
+                        disabled={
+                          activeLesson.exercise.type === 'multiple-choice'
+                            ? !selectedOption
+                            : !blankAnswer
+                        }
+                        onClick={() => handleSubmitAnswer(activeLesson.exercise!)}
+                        className="bg-primary hover:bg-primary/90 active:scale-[0.98] text-white font-semibold text-sm px-6 py-2.5 rounded-lg cursor-pointer transition-all duration-200 shadow-md shadow-primary/15 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                      >
+                        Submit Answer
+                      </button>
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={handlePreviousLesson}
+                        disabled={isFirstLesson}
+                        className="flex items-center gap-1.5 bg-muted hover:bg-border text-foreground disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm px-5 py-2.5 rounded-lg cursor-pointer transition-all duration-200 border border-border"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        Previous
+                      </button>
+                      <button 
+                        onClick={handleNextLesson}
+                        disabled={isLastLesson}
+                        className="flex items-center gap-1 bg-muted hover:bg-border text-foreground disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm px-5 py-2.5 rounded-lg cursor-pointer transition-all duration-200 border border-border"
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Feedback Message */}
