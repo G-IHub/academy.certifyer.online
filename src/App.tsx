@@ -825,14 +825,14 @@ function App() {
                     className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-5 py-3 rounded-lg text-sm font-semibold shadow-md shadow-primary/10 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
                   >
                     <LogIn className="w-4 h-4" />
-                    Authenticate Session
+                    Start Now
                   </button>
-                  <button 
+                  {/* <button 
                     onClick={handleLoginDemo}
                     className="bg-transparent border border-border hover:bg-muted text-muted-foreground px-5 py-3 rounded-lg text-sm font-semibold transition-all duration-200"
                   >
                     Browse as Guest (Demo SSO)
-                  </button>
+                  </button> */}
                 </div>
               )}
 
